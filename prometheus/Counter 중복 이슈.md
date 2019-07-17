@@ -1,24 +1,35 @@
-### Counter 중복 이슈
+### retention 설정
 
 <hr>
 
-현재 Java를 통해 10개 토픽에서 Consuming 하는 중이며, 각 토픽에서 읽는 메시지의 수를 Count하여 Prometheus로 전송하고 있다. 
+Prometheus는 time series DB이며 클러스터를 구성해 운영하지 않다보니, 데이터를 무제한으로 저장하기에 적합하지 않다.
 
-- 각 토픽별로 Count가 다르게 측정되야 하는데, 비슷하게 Count되는 현상이 발견됨.
-  - 원했던 결과
-    - topic 1 - Count: 20
-    - topic 2 - Count: 20
-  - 현재 결과
-    - topic 1 - Count: 40
-    - topic 2 - Count: 40
-- 원인은 Count를 같은 객체에서 측정하고 있었기 때문. 
+이는 retention flag를 통해 저장할 크기나 기간을 설정할 수 있다.
 
 
 
-Count를 기록할 때 Counter, CollectorRegistry 객체가 필요함. (Gauge는 Gauge 객체가 필요) 
+retention 관련 flags
 
-- 현재 코드는 카프카 Consuming 이 후 프로메테우스 객체를 새로 생성해 Count를 세고 있었음. 
-  - 그러다보니 카프카 프로메테우스 내 Counter, CollectorRegistry 를 static 객체로 선언해서 사용했음. 
-  - 그렇다보니 모든 Topic의 Count가 계속 기록되고 있었음. 
-- Counter, CollectorRegistry는 Thread 별로 가지도록 만들 것. 
-  - 이 후 프로메테우스 객체를 생성할 때, 파라미터로 Counter, CollectorRegistry를 전달해서 사용함. 
+- --storage.tsdb.retention.size
+  - retention의 size를 설정할 수 있다.
+- --storage.tsdb.retention.time
+  - retention의 시간을 설정할 수 있다. 디폴트는 15일 이다.
+- *--storage.tsdb.retention*
+  - 없어질 flag이므로 사용하지 않을 것
+
+
+
+retention.size와 time 중 하나만 설정할 수 있고, 둘 다 모두 설정할 수 있다. 둘 모두를 설정할 경우 먼저 발생하는 flag에 따라 데이터 보관을 결정한다.
+
+만약 size는 100GB, time은 15d 일 때, 데이터 사이즈가 100GB가 넘어가면 보관 주기가 15일이 되지 않아도 삭제된다.
+
+
+
+#### 사용
+
+```
+./prometheus --storage.tsdb.retention.size=100GB --storage.tsdb.retention.time=15d
+```
+
+
+
