@@ -14,6 +14,12 @@
 sudo rpm -ivh td-agent-3.4.1-0.e17.x86_64.rpm
 ```
 
+**삭제**
+
+```
+sudo rpm -qa | grep td-agent
+sudo rpm -e td-agent
+```
 
 
 **필요한 plug-in 설치**
