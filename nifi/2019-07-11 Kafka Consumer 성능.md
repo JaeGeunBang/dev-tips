@@ -4,7 +4,9 @@
 
 Kafka Consumer Processor를 사용할 때, 메시지 생성 속도 보다 Consumer 하는 속도가 느린 이슈가 있었다.
 
-- Kafka Topic에 초당 메시지가 1000건씩 생성되는데 Nifi Consumer Processor는 초당 500건 정도만 가져오고 있었음.
+- Kafka Topic에 초당 메시지가 1000건씩 생성되는데 Nifi Consumer Processor는 초당 500건 정도만 가져오고 있었음. (max.poll.records 조정)
+- 하지만 너무 높게 설정하지 말고, topic 별로 초당 생성되는 메시지 수를 보고 결정 할 것.
+
 
 
 
@@ -16,3 +18,9 @@ Kafka Consumer Processor를 사용할 때, 메시지 생성 속도 보다 Consum
 2. Concurrent task의 수를 topic partition 수 - nifi 서버 대수를 통해 조정하자. 
    - topic partition 수 3, nifi 서버 3대 라면, 서로 1:1 대응이기 때문에 concurrent task 수를 높여도 의미가 없다. 
    - 만약 topic partition 수 6이라면, concurrent task 수를 2로 둠으로써 최적의 성능을 낼 수 있다. 
+
+
+
+**참고**
+
+https://kafka.apache.org/0100/javadoc/index.html?org/apache/kafka/clients/consumer/KafkaConsumer.html
