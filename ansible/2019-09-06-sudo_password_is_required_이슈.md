@@ -25,6 +25,6 @@ Ansible의 Web UI인 awx에서 각 서버에 배포할 때 아래 이슈가 발�
 
 --> 아래처럼 바꾼다.
 
-<계정>	ALL=(ALL:ALL)	NOPASSWD: ALL
+<계정>	ALL=(ALL)	NOPASSWD: ALL
 ```
 
