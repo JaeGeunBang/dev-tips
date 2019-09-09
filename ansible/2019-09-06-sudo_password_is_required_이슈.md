@@ -1,4 +1,4 @@
-### sudo_password_is_required_이슈
+### sudo_password_is_required, not_writable 이슈
 
 <hr>
 
@@ -26,5 +26,24 @@ Ansible의 Web UI인 awx에서 각 서버에 배포할 때 아래 이슈가 발�
 --> 아래처럼 바꾼다.
 
 <계정>	ALL=(ALL)	NOPASSWD: ALL
+```
+
+
+
+또한, 파일을 배포할 때 특정 경로에 파일을 복사하지 못할때가 있는데 이는 계정에 대한 root 권한을 주어야함.
+
+아래 playbook 파일에 `become:yes`를 추가해준다.
+
+```
+---
+- hosts: all
+  become: yes
+  
+  tasks:
+  - name: td-agent.conf copy
+    copy:
+        src: td-agent.conf
+        dest: /etc/td-agent/
+        remote_src: no
 ```
 
