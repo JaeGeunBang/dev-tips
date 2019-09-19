@@ -15,12 +15,18 @@ Kafka Consumer Processor를 사용할 때, 메시지 생성 속도 보다 Consum
    - 현재는 flowfile 당 1개의 메시지를 대응하고 있었음. 그렇다보니 정상적인 속도가 나오지 않았었다.
    - Max Poll Records 옵션을 통해 flowfile에 넣고싶은 메시지의 최대 수를 조정할 수 있다. (디폴트는 10000)
 
-2. Concurrent task의 수를 topic partition 수 - nifi 서버 대수를 통해 조정하자. 
-   - topic partition 수 3, nifi 서버 3대 라면, 서로 1:1 대응이기 때문에 concurrent task 수를 높여도 의미가 없다. 
-   - 만약 topic partition 수 6이라면, concurrent task 수를 2로 둠으로써 최적의 성능을 낼 수 있다. 
+2. Concurrent task의 수를 topic partition 수 - concurrent tasks 수와 동일하게 조정하자.
+   - topic partition 수 3, nifi 서버가 4대인데, concurrent tasks가 1개라면
+     - 1개 nifi 서버의 1개의 thread가 topic partition 3개를 모두 consuming 한다.
+     - 그렇기 때문에 모든 topic partition을 동시에 consuming 하고 싶다면 concurrent tasks를 3개로 수정한다.
+     - nifi 서버의 전체 사용 가능한 thread 수는 Controller Setting에 들어가 Maximum Thread 수를 높여준다.
 
 
 
 **참고**
 
 https://kafka.apache.org/0100/javadoc/index.html?org/apache/kafka/clients/consumer/KafkaConsumer.html
+
+
+
+https://bryanbende.com/development/2016/09/15/apache-nifi-and-apache-kafka
