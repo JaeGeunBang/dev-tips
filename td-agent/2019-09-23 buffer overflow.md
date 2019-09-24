@@ -19,6 +19,7 @@ flushing parameter에 flush_thread_count default가 1로 되어있는데 이를 
 1. buffer flushing parameter에 있는 flush_tread_count 수를 높여서 처리한다.
    - 허나 td-agent가 HDFS에 저장하는 경우라면, HDFS에 file은 하나의 client만 접근이 가능하기 때문에 이를 구분해 주어야 한다.
    - 이를 위해 workers를 사용하며 각 worker마다 WebHdfs를 사용해 file 이름을 구분해준다.
+   - worker 수는 kafka topic의 partition과 1:1로 매칭해주는 것이 제일 안전하다. 만약 그렇게 해도 위와 같은 문제가 발생하면, kafka topic의 partition 수를 늘려준다.
 
 ```
 <system>
