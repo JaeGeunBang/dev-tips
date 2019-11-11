@@ -51,7 +51,7 @@ topic 1,2를 consuming 하기 위해 consumer_group을 모두 fluentd로 설정�
 ```
 <source>
   @type kafka_group
-  consumer_group fluentd_topic_1
+  consumer_group fluentd_topic_1 // group명 변경.
   topic topic_1
   add_prefix topic_1
 </source>
