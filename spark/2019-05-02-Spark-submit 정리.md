@@ -34,6 +34,18 @@ target/scala-2.11/example_2.1.1.jar "args1" "args2"
 
 
 
+또는 아래와 같이 작성한다.
+
+```
+./bin/spark-submit 
+--master yarn 
+--deploy-mode cluster 
+--files ./application.conf
+--driver-java-options='-Dconfig.file=application.conf'
+```
+
+
+
 ## Spark executor, driver 조정 (클러스터 모드)
 > --num-executor 1 (Executor 의 수)
 > --executor-cores 1 (Executore의 코어 수)
