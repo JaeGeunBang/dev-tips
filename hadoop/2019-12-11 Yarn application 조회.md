@@ -1,7 +1,11 @@
 ### Yarn application 조회
 
 <hr>
+
+
+
 Yarn에서 실행된 application은 web ui에서 확인할 수 있다.
+
 
 - submitted, accpeted, running, finished, failed, killed 등
 
@@ -30,7 +34,17 @@ curl '<Resource Manager URL:Port>/ws/v1/cluster/apps?startedTimeBegin=...&applic
 
 
 
-**1시간 단위로 failed한 app 조회**
+**1시간 사이 failed한 app의 name만 조회**
+
+check_yarn_failed_app.sh
+
+```bash
+curTime=$(date +"%s")
+curTimeMinusHour=`expr $curTime - 3600`
+curTimeMinusHour000="$curTimeMinusHour"000
+
+curl -s 'url:8088/ws/v1/cluster/apps?startedTimeBegin='$curTimeMinusHour000'&finalStatus=FAILED' | python -m json.tool | grep application_ | grep -v trackingUrl | awk '{print $2}'
+```
 
 
 
