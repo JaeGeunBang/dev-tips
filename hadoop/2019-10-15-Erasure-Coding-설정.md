@@ -80,6 +80,14 @@ EC는 주로 사용 빈도수가 월/년 에 몇번 사용하지 않는 Cold, Fr
 
 
 
+```
+> hadoop distcp -Dmapred.job.queue.name=root.default -overwrite -pb -skipcrccheck <replica_path> <ec_path>
+```
+
+yarn queue setting
+
+
+
 
 ### 참고
 

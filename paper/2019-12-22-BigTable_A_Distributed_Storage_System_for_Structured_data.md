@@ -1,7 +1,11 @@
 ### BigTable_A_Distributed_Storage_System_for_Structured_data (OSDI 2006)
 
 <hr>
+
+
+
 ### Data Model
+
 
 - BigTable은 sparse, distributed, persistent, multi-dimensional sorted map 이다.
 - 여기서 map은 row key, column key, timestamp로 인덱스 되어져 있다.
@@ -52,17 +56,17 @@
     - SSTable은 persistent, ordered immutable map을 제공한다.
     - 그리고 제공해주는 몇 Operation을 통해 SStable에 key를 통해 look up할 수 있다.
     - SStable은 block의 sequence를 가지며, `block index를 통해 block이 SSTable 어디에 위치되어 있는지 알 수 있다.`
-      - 만약 SSTable을 open하면, 먼저 block index 정보를 메모리에 load한다.
+      - SSTable을 open하면, 먼저 block index 정보를 메모리에 load한다.
       - 이후 look up을 하게되면 하나의 disk seek를 수행하며, 먼저 인-메모리 block index에 binary search를 수행해 대략적으로 block의 위치를 찾는다.
       - 찾은 block의 정보를 바탕으로 실제 block을 disk에서 읽는다.
   - BigTable은 `Chubby`라는 highly-available, persistent distributed lock service를 의존한다.
     - Chubby는 5개의 active replica로 이루어져 있으며, 하나는 선출된 master이다.
-    - lock service를 제공하여 read, write를 할 때, 특정 파일이나 디렉토리의 lock을 사용하여 atomic한 처리를 할수 있게 한다.
+    - lock service를 제공하며 Client가 Chubby에서 제공하는 directory, small file들을 read, write를 할 때, atomic한 처리를 할수 있게 한다.
     - 각 Chubby client는 Chubby service의 ***session***을 유지하며, 더이상 사용하지 않을 때 session은 만료된다.
     - session이 만료가 되어야 특정 파일이나 디렉토리의 lock이 풀리며, 다른 client가 이용할 수 있다.
   - BigTable은 다양한 task를 수행하기 위해 Chubby를 사용한다.
     - 1. 1개의 active master를 유지하기 위함.
-      2. BigTable data의 bootstrap location을 저장하기 위함(?)
+      2. BigTable data의 Tablet Location을 저장하기 위함.
       3. table server를 찾기 위해, tablet server의 죽음을 알기 위함.
       4. BigTable schema (metadata) 정보를 저장하기 위함.
       5.  access control list를 저장하기 위함.
@@ -83,13 +87,13 @@
     - 각 tablet server는 tablet 의 집합을 관리하며, read, write 요청을 다룰 수 있다.
   - BigTable은 여러 Table을 저장하며, 각 Table은 여러 tablet으로 이루어져 있으며, 각 tablet은 row range와 연관된 모든 데이터를 저장한다.
     - 첫 Table은 하나의 tablet만 가지며, table이 점점 커짐에 따라, tablet은 자동으로 여러 tablets로 split된다. (디폴트는 100~200 MB 사이즈)
-- Tablet Location
+- **1. Tablet Location**
   - Tablet은 3 level의 계층 구조를 가진다. (B+ Tree 형태이며 `tablet location hierarchy`라 함)
     - Chubby file --> Root tablet (=METADATA Table) --> Other METADATA tablets --> User Table1, User Table2..
   - Client library를 tablet location을 cache한다.
     - 만약 cache가 되지 않은 상태거나, tablet location을 모른다고 하면, tablet location hierarchy에서 찾아야 한다.
       - Chubby file부터 시작해 Client가 필요로 하는 tablet location을 찾는다.
-- Tablet Assignment
+- **2. Tablet Assignment**
   - Tablet은 하나의 tablet server에 할당된다.
     - mater가 할당되지 않은 tablet을 충분한 공간을 가진 server에 할당한다.
   - Tablet 서버가 시작하면, 가장 먼저 Chubby Directory에 대한 `전용 락` 을 얻어야 한다.
@@ -105,6 +109,7 @@
       2. Chubby의 server directory를 scan하여, 현재 live한 tablet 서버들을 찾는다.
       3. 각 live한 tablet 서버와 커뮤니케이션을 하며, 어떤 tablet을 할당 받았는지 찾는다.
       4. tablet의 집합을 알기 위해 METADATA table을 scan한다.
+- **3. Tablet Serving**
 
 
 
