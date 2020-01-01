@@ -87,13 +87,13 @@
     - 각 tablet server는 tablet 의 집합을 관리하며, read, write 요청을 다룰 수 있다.
   - BigTable은 여러 Table을 저장하며, 각 Table은 여러 tablet으로 이루어져 있으며, 각 tablet은 row range와 연관된 모든 데이터를 저장한다.
     - 첫 Table은 하나의 tablet만 가지며, table이 점점 커짐에 따라, tablet은 자동으로 여러 tablets로 split된다. (디폴트는 100~200 MB 사이즈)
-- **1. Tablet Location**
+- **Tablet Location**
   - Tablet은 3 level의 계층 구조를 가진다. (B+ Tree 형태이며 `tablet location hierarchy`라 함)
     - Chubby file --> Root tablet (=METADATA Table) --> Other METADATA tablets --> User Table1, User Table2..
   - Client library를 tablet location을 cache한다.
     - 만약 cache가 되지 않은 상태거나, tablet location을 모른다고 하면, tablet location hierarchy에서 찾아야 한다.
       - Chubby file부터 시작해 Client가 필요로 하는 tablet location을 찾는다.
-- **2. Tablet Assignment**
+- **Tablet Assignment**
   - Tablet은 하나의 tablet server에 할당된다.
     - mater가 할당되지 않은 tablet을 충분한 공간을 가진 server에 할당한다.
   - Tablet 서버가 시작하면, 가장 먼저 Chubby Directory에 대한 `전용 락` 을 얻어야 한다.
@@ -109,9 +109,16 @@
       2. Chubby의 server directory를 scan하여, 현재 live한 tablet 서버들을 찾는다.
       3. 각 live한 tablet 서버와 커뮤니케이션을 하며, 어떤 tablet을 할당 받았는지 찾는다.
       4. tablet의 집합을 알기 위해 METADATA table을 scan한다.
-- **3. Tablet Serving**
 
-
+- **Compaction**
+  - memtable 크기는 점점 늘어나기 때문에, threshold에 도달했을 때, 새로운 memtable을 만든다.
+    - 그리고 기존 memtable은 SSTable로 convert 후 GFS에 쓴다. (**minor compaction**)
+    - 두가지 목적이 있는데,
+      - 1. 메모리 사용량을 줄이기 위함
+        2. 서버가 죽었을 때, recovery 동안 commit log로 읽는 데이터의 양을 줄이기 위함.
+  - 새로 생성된 memtable은 background에서 주기적으로 합병을 한다. (**merge compaction** = **major compaction**)
+    - 몇 SSTable과 memtable을 읽은 후, 새로운 SSTable로 다시 쓴다. 이후 기존 SSTable, memtable은 삭제된다.
+    - non-major compaction은 실제 data를 지우지 않지만 (표시만 해두는 것 같다), major compaction에서는 실제 data를 지운다. (data에 민감한 시스템에서 중요한 작업이다.)
 
 
 
