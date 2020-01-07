@@ -1,6 +1,11 @@
-### Collection
+### AWS Collection
 
 <hr>
+
+
+
+
+
 ### 종류
 
 RealTime - Immediate Actions (실시간으로 데이터나 이벤트에 반응하는 서비스)
@@ -39,9 +44,9 @@ Kinesis는 AWS에서 제공하는 Apache Kafka라 보면됨
 
 Kinesis는 3가지 서비스가 있다.
 
-- Kinesis Streams: low latency의 streaming ingest를 수행한다.
-- Kinesis Analytics: SQL을 통한 real-time analytics를 수행한다.
-- Kinesis Firehose: stream을 S3, RedShift, ES 등에 load한다.
+- `Kinesis Streams`: low latency의 streaming ingest를 수행한다.
+- `Kinesis Analytics`: SQL을 통한 real-time analytics를 수행한다.
+- `Kinesis Firehose`: stream을 S3, RedShift, ES 등에 load한다.
 
 ![1](https://user-images.githubusercontent.com/22383120/71798115-332b7300-3094-11ea-8888-2ea7c8d2ccba.PNG)
 
@@ -63,7 +68,7 @@ Kinesis는 3가지 서비스가 있다.
 
 
 
-### Kinesis Streams Records
+**Kinesis Streams Records**
 
 - Producer가 shard에 record를 생성하며, record는 아래와 같이 이루어져 있다.
 - Data Blob
@@ -75,7 +80,7 @@ Kinesis는 3가지 서비스가 있다.
 
 
 
-### 참고사항
+**참고사항**
 
 - Producer는 1MB/s or 1000 message/s를 shard에 쓸수 있다.
   - 만약 이를 넘어가면 `ProvisionedThroughputException`이 발생한다.
@@ -84,6 +89,173 @@ Kinesis는 3가지 서비스가 있다.
   - Consumer Enhanced Fan-Out: Enhanced Consumer는 Shard 당 2MB/s를 읽을 수 있으며, API call을 하지 않는다.
     - 이는 `push model`이라 하는데, Server가 Client에게 데이터를 전송하는 기법을 뜻한다.
 - Data Retention은 24시간이 디폴트이며 7일까지 늘릴수 있다.
+
+
+
+<hr>
+
+### Kinesis Producer
+
+다양한 Producer를 제공한다.
+
+- Kinesis SDK , Kinesis Producer Library (KPL), Kinesis Agent
+- 이외에 Spark, Kafka, Nifi 등 3rd party library와 연동할 수 있다.
+
+
+
+**Kinesis SDK** (putRecord, putRecords)
+
+- API는 PutRecord (한개 레코드)와 PutRecords(두 개 이상의 레코드)를 지원한다. 
+  - PutRecords를 사용하면, batching 처리를 할 수 있고 throughput을 향상시킬 수 있다. (HTTP request는 줄인다.)
+- Producer SDK는 다양한 방법으로 사용된다 (AWS Mobile SDK: Android, iOS 등)
+- Use Case
+  - low throughput, higher latency, Simple API, AWS Lambda
+
+- AWS Sources들도 관리할 수 있다.
+  - CloudWatch Logs, AWS IoT, Kinesis Data Analystics (분석 결과를 다시 Kinesis에 저장)
+
+- ProvisionedTHroughputExceedde Exception
+  - 프로비저닝된 throughput 보다 넘을 경우 (더 많은 데이터를 보낼 경우) 발생한다.
+    - 예를들어, hot partition에만 데이터가 몰릴 경우
+  - 해결책
+    - backoff에서 retry를 할 것. (2초 후에 다시 시도하고 다시 동작하지 않으면 4초 후, 그 이후 8초 후..)
+    - shard 수를 증가시킬 것 (Scaling)
+    - 좋은 partition key를 골라 골구로 모든 partition에 분포되도록 할 것
+
+
+
+**Kiness Producer Library (KPL)**
+
+- C++, Java Library 에서 사용하기 쉬우며, 높은 성능과 long-running producer를 만들 수 있다.
+- 자동으로 retry mechanism이 내장되어 있고, Synchronous와 Asynchronous API를 제공한다.
+  - Synchronous는 위에서 설명한 SDK와 같다고 보면 되며, Asynchronous가 더 좋은 성능을 보인다.
+- CloudWatch의 metrics 정보를 전송할 수 있어 minitoring 하는데 사용할 수 있다.
+  - SDK는 CloudWatch의 logs만 전송했었음.
+- Batching 처리를 하여 throughput을 높이고, 비용은 낮춘다.
+  - Collect는 multiple shards에 record를 write할 수 있다.
+  - Aggregation은 여러 record를 하나의 record로 저장할 수 있다. (Latency는 증가하지만, 효율성은 또한 증가한다.)
+  - Batching 처리를 할 때, 데이터가 유입되자마자 Kinesis로 전송하지 않는다. (delay를 둔다.)
+    - delay 후 모아둔 Record를 하나의 Record로 Aggregating 할 수 있으며, 여러 시간 때의 Record로 모은 후 PutRecords를 한번 호출해 총 7개의 Record를 전송할 수 있다.
+    - RecordMaxBufferedTime (default 100ms)를 통해 delay를 조절함으로써 Batching 처리를 좀더 효율적으로 할 수 있다. (좀더 빠른 latency를 원하면 해당 parameter를 더 낮추면 된다.)
+
+- 압축도 사용할 수 있다.
+
+
+
+**Kinesis Agent**
+
+- Java-기반 agent로 KPL기반으로 빌드된다.
+- Linux 기반 servere 환경에 설치할 수 있다.
+- 특징
+  - multiple directoriy로 부터 write 할수 있고, multiple streams에 write할 수 있다.
+  - Routing 기능을 제공한다 (?)
+  - streams에 전송하기 전에 Pre-processing 할 수 있다. (single live, csv to json, log to json 등등)
+  - file roattion, checkpointing, retry 등을 지원한다.
+
+
+
+<hr>
+
+### Kinesis Consumer
+
+- Kinesis SDK (getRecord)
+  - Shard로부터 Consumer에게 Records를 pull 한다.
+  - 각 Shard는 최대 `2MB` aggregate throughput을 가진다. (Producer는 최대 `1MB`)
+    - 만약 3개의 Shard가 있다면 최대 6MB를 Consuming 할 수 있다.
+  - Consumer가 Shard에 GetRecords API를 요청하면, Data를 반환해준다.
+    - 여기서 GetRecords API로 받을 수 있는 최대 데이터 크기는 `10 MB or 10000 Records` 이다.
+    - 여기서 **Shard는 Consumer 할 때 총 2MB이기 때문에, 5초를 기다려야 한다.**
+  - 초당 Shard에 최대 `5개 GetRecords API`을 요청할 수 있으며, 이는 200ms latency이다.
+    - 만약 20개의 GetRecords API가 요청이 왔다면, 5개씩 처리한다는 의미이다.
+  - 만약 5개의 Application이 똑같은 Shard에 Consuming 요청을 한다면,
+    - 각 Application은 `400KB`의 데이터를 받을 수 있다. (2MB / 5 = 400KB)
+    - 이러한 성능을 위해 **Kinesis Enhance FanOut**을 사용한다.
+- Kinesis Client Library (KCL)
+  - Java 기반의 Library로 다른 언어들도 지원한다. (Golang, Python, Ruby 등)
+  - 여러 Shard들은 1개의 Group 내 있는 여러 Consumer들을 공유한다.
+    - 즉, 같은 Group 내 여러 Consumer가 있다고 하면, 중복 데이터 없이 Records를 Consuming한다.
+  - Checkpointing은 나중에 같은 Group의 Consumer가 읽더라도, 마지막 위치를 기록하고 있기 때문에 과거에 읽었던 부분부터 Consuming 한다.
+    - 이러한 메타 정보는 Amazon Dynamo DB에 저장한다. (coordination 용도)
+      - Shard 당 Table의 1개 Row로 Checkpoint 정보를 저장한다.
+      - **DynamoDB 사용시 주의사항**
+        - 충분한 Write Capacity Unit (WCU), Reading Capacity Unit (RCU) 프로비저닝을 확인한다.
+        - On-Demand를 사용한다. (스펙을 잘 모를때, 쓰는 만큼만 비용을 지불하고 싶을 때 사용함.)
+        - 만약 그렇지 않다면 KCL이 느려질 수 있다.
+- Kinesis Connector Library
+  - KCL Library를 이용하는 Java Library로 S3, DynamoDB, Redshift, ES등에 data를 Write하는 역할을 한다.
+    - Connector Library는 주로 EC2 Instance 위에서 동작한다.
+  - Kinesis Firehose와 유사한데, `Connector Library는 주로 AWS Lammda와 사용`한다. (???)
+- AWS Lambda
+  - Kinesis Data Streams에서 Records를 얻을 수 있으녀, KPL을 사용한다.
+  - Lambda는 lightweight한 ETL를 수행할 때 사용한다.
+  - 이 외 Trigger notification이나 email을 실시간으로 전송할 수 있다.
+  - 마지막으로, batch size를 조절할 수 있다.
+- 3rd parth library (Spark, Log4j, Appenders, Flume 등)
+
+
+
+<hr>
+
+### Kinesis Enhanced Fan Out
+
+- New game-Changing feature (?)
+
+  - `기존 규칙을 깨고 새로운 규칙을 만들어 내는 것.(?)`
+
+- KCL 2.0, AWS Lambda를 사용한다.
+
+- 각 Consumer는 2MB/s의 Records를 각 Shard로 부터 얻을 수 있다.
+
+  - SubscribeToShard()를 하면 Kinesis Data Streams가 Consumer에게 2MB/s의 데이터를 push 한다. (`HTTP/2를 사용해서 Enhanced Fan Out 인듯 하다.`)
+
+    - 위 Pull 방식은 Shard가 총 2MB/s를 제공하는 것이기 때문에, Consumer들이 많으면 성능이 떨어진다.
+    - 하지만, Push 방식 (Enhanced Fan Out)은 Consumer 당 2MB/s를 받을 수 있기 때문에, Consumer들이 많아도 성능이 떨어지지 않는다.
+    - 예를 들어, 20 Consumer가 있을 때, 각 Shard 당 40 MB/s 를 받을 수 있다.
+
+  - Latency는 평균 70 ms 내로 동작한다. (기존 200ms 보다 줄었다.)
+
+    - push를 하기 때문임.
+
+      
+
+Enhanced Fan-Out, Standard Consumer 비교
+
+- Standard Consumer
+  - 적은 수의 Consumer ( 1개, 2개, 3개.. 등등)
+  - 200 ms Latency여도 상관없는 Consumer들
+  - 비용 최소화
+
+- Enhanced Fan-Out
+  - 수많은 Consumer들
+  - 70 ms Latency 이하로 빠른 성능을 원함.
+  - 높은 비용
+  - Default로 5개 Consumers로 제한되어 있다.
+
+
+
+<hr>
+
+### Kinesis Scaling
+
+- Shard 추가 (Shard Splitting 이라고도 함)
+  - Stream Capacity를 향상 시킬수 있다. Shard 당 1MB/s 
+    - 만약 Shard가 10개면 최대 10 MB/s Producing 가능.
+    - 주로 hot shard에 사용하면 된다.
+  - Shard를 추가하면, 기존 Shard는 종료되며 (더이상 데이터를 받지 않는다.) data가 expire 되면, shard는 삭제된다.
+- Shard 합병 (추가의 반대 operation으로 Shard를 줄인다.)
+  - 비용을 줄이기 위함이며, traffic이 낮은 2 shard를 합병한다.
+  - 마찬가지로, shard를 하나 만들고, 기존 두 Shard는 종료되고 (더이성 데이터를 받지 않는다.) data가 expire되면, 두 shard는 삭제된다.
+
+- Auto Scaling
+  - 특징
+    - native feature가 아니다.
+    - shard의 수를 UpdateShardCount API 로 변경한다.
+    - AWS Lambda를 통해 Auto Scaling을 실행할 수 있다.
+  - 제한사항
+    - 병렬로 Resharding 할 수 없다. 미리 capacity에 대한 plan이 필요하다. (resharding이 빠른 속도가 아니기 때문에 미리 plan이 필요하다는 뜻)
+      - 즉, 동시에 여러 shard들이 reshard 되지 않는다는 의미이며, 하나씩 resharing 한다.
+      - 만약 1000개 Shard를 2000개로 늘린다고 하면, 총 8.3 시간이 소요된다.
+    - 그 외 여러 많이 있지만, 굳이 알 필요는 없다.
 
 
 
