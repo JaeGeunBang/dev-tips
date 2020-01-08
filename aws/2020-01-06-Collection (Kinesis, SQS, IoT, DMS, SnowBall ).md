@@ -114,7 +114,7 @@ Kinesis는 3가지 서비스가 있다.
 - AWS Sources들도 관리할 수 있다.
   - CloudWatch Logs, AWS IoT, Kinesis Data Analystics (분석 결과를 다시 Kinesis에 저장)
 
-- ProvisionedTHroughputExceedde Exception
+- ProvisionedThroughputExceedde Exception
   - 프로비저닝된 throughput 보다 넘을 경우 (더 많은 데이터를 보낼 경우) 발생한다.
     - 예를들어, hot partition에만 데이터가 몰릴 경우
   - 해결책
@@ -184,7 +184,8 @@ Kinesis는 3가지 서비스가 있다.
 - Kinesis Connector Library
   - KCL Library를 이용하는 Java Library로 S3, DynamoDB, Redshift, ES등에 data를 Write하는 역할을 한다.
     - Connector Library는 주로 EC2 Instance 위에서 동작한다.
-  - Kinesis Firehose와 유사한데, `Connector Library는 주로 AWS Lammda와 사용`한다. (???)
+  - Kinesis Firehose와 유사한데, Connector Library는 직접 EC2에서 동작시키고 싶을 때 사용한다.
+    - Kinesis Firehose는 서비스이다.
 - AWS Lambda
   - Kinesis Data Streams에서 Records를 얻을 수 있으녀, KPL을 사용한다.
   - Lambda는 lightweight한 ETL를 수행할 때 사용한다.
@@ -258,6 +259,97 @@ Enhanced Fan-Out, Standard Consumer 비교
     - 그 외 여러 많이 있지만, 굳이 알 필요는 없다.
 
 
+
+<hr>
+
+
+
+### Kinesis Security
+
+Kinesis Security 종류는 아래와 같다.
+
+- IAM 정책을 통한 Control Access, Authorization
+- HTTPS endpoint를 이용해 암호화
+  - data를 Kinesis로 전송할 때 암호화를 하기 때문에 intercept 할 수 없다.
+  - 또한 KMS (?)를 이용해 rest(?)에 암호화를 할 수 있다.
+  - 이러한 암호화/복호화는 client 에서 수동으로 해야한다.
+- VPC를 통해 Private Network를 만들어 public 하게 사용하지 않는다.
+
+
+
+<hr>
+
+### Kinesis Firehose
+
+특징
+
+- Fully Managed Service (완전히 관리된 서비스), no administration
+- 근실시간 (60초 이내 latency를 가진다)
+  - Kinesis Streams는 실시간이지만, Kinesis Firehose는 근실시간이다.
+  - 이러한 이유는 Firehose는 batching 방식으로 동작하기 때문이다.
+  - 만약 full batch가 아니라면, gurantee를 보장하지 못하고(?) 데이터를 바로 destination으로 보낼 것이다.
+
+- 데이터를 `Redshift, AWS S3, ES, Splunk` 등에 Load 한다.
+- Automatic Scaling을 가진다.
+  - 더 많은 throughput을 원할 때 자동으로 scale을 늘릴 수 있다.
+  - 반대로 더 적은 throughput을 원할 때는 scale을 줄일 수도 있다.
+- 다양한 Data Format과 Data Conversion을 지원한다. Json --> Parquet/ ORC 등 (`S3 에서만 가능`)
+  - 만약 다른 Type으로 변경하고 싶으면 AWS Lambda와 같이 활용한다. (ex. CSV --> JSON)
+- 다양한 압축 방법 (Gzip, Zip, Snappy을 지원한다. (`S3 에서만 가능`)
+  - 단 RedShift에서는 Gzip은 지원된다.
+- 데이터를 전송한 만큼 비용을 지불하면 된다.
+- 마지막으로, Spark, KCL은 Kinesis Data Firehouse로 부터 데이터를 읽을 수 없다. (참고할것. 시험에서 트릭)
+
+
+
+**Kinesis Data Firehose Diagram**
+
+- Kinesis Firehose에는 다양한 Source들이 연동될 수 있다. 
+  - 위에서 설명한 KPL, Kinesis Agent 들도 Kinesis Data Streams가 아닌 Firehose에 바로 데이터를 전송할 수 있다.
+- 데이터 변형을 위해 Lambda Function을 활용할 수 있다. (ex. CSV --> JSON)
+  - Firehose에 온 데이터를 Lambda를 통해 변형 후 다시 Firehose로 전송한다.
+- 이후 데이터는 Amazon S3, Redshift, ES, Splunk에 전송될 수 있다.
+  - Amazon S3에 Lambda를 통해 변형된 데이터를 저장할 수 있으며, 이에 대한 Copy를 Redshift에도 복사할 수 있다.
+  - 또한, 원본(Source data)를 S3에 다른 버킷에 저장하여, 데이터 유실이 발생하지 않게 한다.
+  - 이외에도, Transformation 실패, Delivery 실패에 관한 로그도 아카이빙 용도로 저장하여 나중에 원인을 분석할 수 있다.
+
+
+
+**Firehose Buffer Sizing**
+
+- Firehose는 Source 로부터 Record들을 받을 것이고, 이를 Buffer에 모을 것이다.
+  - Buffer는 항상 flushed되지 않으며, flushed되기 위해 몇가지 Rule이 있다. (time, size rule)
+- Rule
+  - Buffer Size를 정의해야한다. (ex. 32MB) 해당 사이즈를 도달했을 경우 flush한다.
+  - Buffer Time을 정의해야한다. (ex. 2M) 해당 시간을 도달했을 경우 flush한다.
+    - 2분이 지나면 buffer Size가 가득차지 않더라도 flush한다.
+    - 결론적으로, 시간이든 사이즈든 먼저 도달한쪽이 발생하면, flush한다.
+- Firehose는 throughput을 향상시키기 위해 자동으로 buffer size를 증가시킨다. (Auto Scaling)
+  - High Throughput을 위해 보통 Buffer Size를 조절한다.
+  - Low Throughput을 위해 보통 Buffer Size보다 Buffer Time을 조절한다.
+  - **참고로 가장 작은 buffer time은 1분이다.**
+
+
+
+**Kinesus Data Stream, Firehose의 비교**
+
+Streams
+
+- custom code (producer / consumer)를 작성할 수 있다.
+- Real Time 내로 동작한다. (일반적으로 200 ms latency 내, enhanced fan-out은 70ms latency 내)
+- Scaling을 관리해야 한다. (Shard Splitting, merge 등 - 비용, Throughput과 직결됨)
+- 데이터는 1~7일 보관이 가능하며, multiple consumer가 사용할 수 있다.
+
+Firehose
+
+- 완전히 관리된 서비스이며, S3, Splunk, Redshift, ES로 데이터를 보낼수 있다.
+- Lambda와 함께 서버리스 데이터 전송이 가능하다.
+- Near Real Time 내로 동작한다. (가장 작은 buffer time이 1분)
+- 자동 Scaling 이며, 데이터를 보관하지 않는다.
+
+
+
+ 
 
 ### 참고
 
