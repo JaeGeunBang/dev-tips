@@ -103,7 +103,7 @@ Kinesis는 3가지 서비스가 있다.
 
 
 
-**Kinesis SDK** (putRecord, putRecords)
+**Kinesis SDK** (putRecord, putRecords) - CLI command
 
 - API는 PutRecord (한개 레코드)와 PutRecords(두 개 이상의 레코드)를 지원한다. 
   - PutRecords를 사용하면, batching 처리를 할 수 있고 throughput을 향상시킬 수 있다. (HTTP request는 줄인다.)
@@ -158,7 +158,7 @@ Kinesis는 3가지 서비스가 있다.
 
 ### Kinesis Consumer
 
-- Kinesis SDK (getRecord)
+- Kinesis SDK (getRecord) - CLI command
   - Shard로부터 Consumer에게 Records를 pull 한다.
   - 각 Shard는 최대 `2MB` aggregate throughput을 가진다. (Producer는 최대 `1MB`)
     - 만약 3개의 Shard가 있다면 최대 6MB를 Consuming 할 수 있다.
