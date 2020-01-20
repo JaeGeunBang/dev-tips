@@ -351,6 +351,168 @@ Firehose
 
  
 
+<hr>
+
+### SQS
+
+SQS도 Kinesis와 마찬가지로, Producer가 Message를 전송하면 이를 Consumer가 메시지를 받게된다.
+
+- 하지만 Kinesis와는 다르다.
+
+
+
+Standard Queue (AWS SQS) 특징
+
+- Oldest Offering (10년 된 서비스)로 Fully Managed 서비스이다.
+- Scale은 1 Message/s ~ 10,000 Message/s 까지 가능하다.
+- Default retention은 4 days ~ 최대 14 days 까지 가능하다.
+- queue에 얼마나 많은 메시지가 저장될 수 있는지에 대한 제한은 없다.
+- Low Latency (10 ms 이내 publish, receive 가능)
+- consumer 수에 따라 horizontal scaling 가능
+- message를 복사할 수 있음.
+- 메시지의 순서는 보장하지 않는다.
+- 메시지당 256 KB 크기로 제한되어 있다.
+
+
+
+Producing Message 구조
+
+- Body
+  - 256 KB 까지 저장 가능
+  - String
+- Message Attributes (Metadata - optional)
+  - name - type - value
+  - name - type - value ...
+- Delay Delivery를 제공 (optional)
+- `Kinesis 와 큰 차이점은...`
+  - SQS는 256 KB의 String Body를 전송한다.
+  - Kinesis는 1 MB의 byte code를 전송한다. 
+
+
+
+Consuming Message
+
+- 한번에 10 message를 consumer가 받을 수 있다.
+- 메시지를 지울 땐 Consumer가 message를 전달 받아 처리후, SQS에 Message Id, receipt handle을 전달후 지운다.
+  - 그러면, 다른 consumper application이 해당 message는 사용하지 못한다. (`Kinesis와 큰 차이점`)
+
+
+
+FIFO QUEUE
+
+- First In - First Out 방식.
+- Lower throughput (3,000 message/s)
+- 들어온 순서대로 consumer에 의해 처리된다. (메시지는 정확하게 한번 전송된다.)
+
+
+
+SQS Extended Client
+
+- 256 KB Message 크기가 제한되어있기 때문이 이를 더 늘리고 싶다면, SQS Extended Client (Java Library)를 사용한다.
+- 처리 단계
+  - Producer가 Amazon S3 Buket에 Large message (256 KB 초과)를 저장한다.
+  - 이후 message의 metadata를 SQS Queue에 전송한다.
+  - Consumer는 SQS Queue에서 message의 metadata를 읽는다.
+  - 이후 Consumer는 Amazon S3 Bucket에 저장된 message를 읽는다. 
+
+
+
+사용 사례
+
+- Decouple Application (asynchronously payment를 다룰때,)
+- Buffer Write to a database (DB에 데이터를 쓸때 buffer 역할로 쓴다.)
+- Handle large loads of message coming in (대규모의 email sender가 있을 때 (?))
+- SQS can be integrad with Auto Scaling Through CloudWatch (CloudWatch와 결합되어 모니터링 서비스와 같이 사용된다.)
+
+
+
+제한사항
+
+- 최대 120,000 in-flight message를 consumer에 의해 처리가 가능하다.  
+- Batch Request는 최대 10 message, 256 KB 이다.
+- Message Content는 XML, JSON, Unformatted text만 가능하다.
+- Standard queue는 unlimited TPS (Transactions per second)를 가진다.
+- FIFO queue는 3,000 message/s를 지원한다.
+- Max message Size는 256 KB이지만, Extended Client를 사용하면 더 늘어날 수 있다.
+- Date retention은 1분~14분 까지 가능하다.
+- 가격 측정
+  - API Request
+  - Network usage
+
+
+
+SQS 보안
+
+- HTTPS endpoint를 사용한다.
+- KMS를 사용해 SSE (Server Side Encripytion)이 가능하다.
+- IAM policy를 반드시 써야한다.
+
+
+
+<hr>
+
+### Kinesis Data Streams 와 SQS의 비교
+
+Kinesis Data Stream
+
+- Message가 여러번 Consuming 될 수 있다.
+- 특정 retention 기간이 지난 후에 message를 삭제한다.
+- Shard 단위에서 record ordering이 가능하다.
+- "Streaming MapReduce" Query가 가능하다(?)
+  - 실시간 처리가 가능하다는 의미인것 같음.
+- Checkpoint를 제공한다. (With DynamoDB)
+- Shard는 이전에 미리 정의해놔야 한다.
+- 사용 유즈 케이스
+  - 실시간 데이터 분석 및 실시간 Metric, Report 등
+  - 모바일 데이터 Capture
+  - 복잡한 Streaming Processing
+  - IoT Data Feed
+
+
+
+SQS
+
+- Message는 한번만 Consuming 될 수 있다. 즉, 하나의 App이 하나의 Queue를 읽는다.
+- Consumer에 의해 message를 삭제한다.
+- Standard queue에서 ordering이 보장되지 않는다.
+  - ordering 보장을 위해 FIFO queue를 사용해야한다.
+- "delay" message가 가능하다.
+- Dynalic 하게 Scaling 해야한다.
+- 사용 유즈 케이스
+  - Order Processing (FIFO QUEUE 사용함. 순서가 보장됨)
+  - Image 처리 (?)
+  - Message에 따라 Auto Scaling Queue를 하고 싶을 때.
+  - Batch, Buffer 용도로 사용하기 위함.
+  - Offloading 요청 (?)
+
+
+
+모든 Streams 기술 비교
+
+![3](https://user-images.githubusercontent.com/22383120/72723773-e3d16080-3bc4-11ea-8f0e-7f391e51fe5e.PNG)
+
+
+
+<hr>
+
+### IoT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### 참고
 
 https://aws.amazon.com/ko/kinesis/
