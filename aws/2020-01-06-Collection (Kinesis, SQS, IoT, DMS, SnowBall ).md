@@ -444,7 +444,7 @@ SQS Extended Client
 SQS 보안
 
 - HTTPS endpoint를 사용한다.
-- KMS를 사용해 SSE (Server Side Encripytion)이 가능하다.
+- KMS (Key Management Service)를 사용해 SSE (Server Side Encripytion)이 가능하다.
 - IAM policy를 반드시 써야한다.
 
 
@@ -458,7 +458,7 @@ Kinesis Data Stream
 - Message가 여러번 Consuming 될 수 있다.
 - 특정 retention 기간이 지난 후에 message를 삭제한다.
 - Shard 단위에서 record ordering이 가능하다.
-- "Streaming MapReduce" Query가 가능하다(?)
+- "Streaming MapReduce" Query가 가능하다
   - 실시간 처리가 가능하다는 의미인것 같음.
 - Checkpoint를 제공한다. (With DynamoDB)
 - Shard는 이전에 미리 정의해놔야 한다.
@@ -480,10 +480,11 @@ SQS
 - Dynalic 하게 Scaling 해야한다.
 - 사용 유즈 케이스
   - Order Processing (FIFO QUEUE 사용함. 순서가 보장됨)
-  - Image 처리 (?)
+  - Image 처리
+    - Image 데이터를 Extended library를 통해 S3에 저장하여 처리할 때 사용한다.
+    - 일반적으로 Kinesis나 SQS broker에 Image를 저장하지 못하기 때문.
   - Message에 따라 Auto Scaling Queue를 하고 싶을 때.
   - Batch, Buffer 용도로 사용하기 위함.
-  - Offloading 요청 (?)
 
 
 
@@ -491,17 +492,121 @@ SQS
 
 ![3](https://user-images.githubusercontent.com/22383120/72723773-e3d16080-3bc4-11ea-8f0e-7f391e51fe5e.PNG)
 
-
+- SQS FIFO는 Exactly Once 처리가 가능하다.
+  - SQS FIFO Queue는 로그의 순서를 위한 Order 작업과 중복 제거 작업을 하기 때문이다.
+- SQS FIFO는 ~3000 message로 제한된 이유도 위와 같이 전처리 (Order, 중복 제거)가 필요하기 때문이다.
 
 <hr>
 
 ### IoT
 
+ ![2](https://user-images.githubusercontent.com/22383120/73116571-d842b880-3f7b-11ea-8fc8-9b19de99c7b6.PNG)
+
+- IoT Thing
+
+  - IoT Device
+
+- Thing Registry (**IAM of IoT**)
+
+  - Device ID, authentication security 등 데이터를 받을 Device를 등록한다.
+    - 각 Device는 Unique ID를 가지며, 각 Device마다 metadata를 지원한다.
+  - Authentication을 위해 X.509 certication을 사용한다.
+    - 이외에도 AWS SigV4, Custom token을 제공한다.  
+  - Authorization
+    - AWS IoT Policy
+      - X.509 certifacate와 첨부(attach)할 수 있다.
+      - JSON Documents로 되어있다.
+      - 각 IoT Device 보단 group 별로 attach 한다.
+    - IAM Policy
+      - users, group, role에 attach 한다.
+      - IoT AWS API를 제어할 수 있다.
+  - IoT Group을 만들어 group 별로 permission을 할당할 수 있다.
+
+- Device gateway
+
+  - AWS IoT Cloud (Broker 등)과 IoT Thing의 Communication을 위해 사용하는 Manager Service
+    - 즉, AWS IoT Cloud와 메시지를 주고 받기 위해 Device Gateway를 거쳐야 한다.
+  - MQTT, WebSocket, HTTP 1.1 protocol을 지원한다.
+  - Full managed, 자동 scale up을 지원한다. (bilion device)
+
+- IoT Mesage Broker
+
+  - Message를 임시 저장하는 역할을 한다. (pub/sub messaging pattern , low latency )
+    -  Message는 topic으로 publish 된다.
+    - 해당 topic과 연결된 모든 clinet에게 message를 전달한다.
+  - MQTT, WebSocket, HTTP 1.1 protocol을 지원한다.
+
+- IoT Rules Engine
+
+  - Broker로 부터 Message를 받으며, 특정 조건이 발성하면 Kinesis, SQS, Lambda 등에 데이터를 전송한다.
+  - Rule은 MQTT Topic에 정의된다.
+    - **언제** 발생할 지 trigger를 만들 수 있고, **무엇을** 할지 결정할 수 있다.
+    - ex)
+      - file을 S3에 저장하라.
+      - SQS queue에 data를 publish 하라.
+      - Lambda function을 통해 data를 추출하라.
+      - 등등..
+
+- Device Shadow
+
+  - AWS IoT Cloud와 통신이 끊켰을 때를 대비해 Device의 상태 정보 (state)를 임시 보관한다.
+    - ex) light on, light off, light blue, light red 등등
+  - JSON Document로 Device의 상태를 나타낼 수 있다.
+  - 향후 online 상태가 되었을 때 먼저 IoT는 Device Shadow를 retrieve 한다.
+
+- IoT Greengrass
+
+  - device에 직접 compute layer (ex. lambda)를 제공한다.
+    - 즉, device에 lambda function을 동작시킬 수 있다.
+    - ex)
+      - 데이터 전처리
+      - ML model 기반의 prediction을 수행
+      - device data의 sync
+      - local device 간 commucation
+      - 등등.
+  - Offline에서도 동작할 수 있다. (AWS와 연결이 끊키더라도 동작할 수 있음)
+
+  
+
+<hr>
+
+### DMS  - Database Migration Service
+
+Migration 를 위한 서비스
+
+- Securly, Quickly 하게 database를 AWS로 migration할 수 있다.
+- migration 하는 동안 source database는 계속 사용할 수 있다.
+- Support
+  - Homogeneous Migation: Oracle --> Oracle
+  - Heterogeneous Migration: SQL Server --> Autora
+- CDC를 사용해 Data Replication으로 사용할 수 있다.
+- Replication tasks를 수행하기 위해 반드시 EC2 Instance를 띄어야 한다.
 
 
 
+Source, Target
+
+- Source
+  - On-Premise, EC2 Instance database (Oracle, MS SQL Server, MY SQL 등등)
+  - Azure: Azure SQL Database
+  - Amazon RDS
+  - Amazon S3
+- Target
+  - On-Premise, EC2 Instance database (Oracle, MS SQL Server, MY SQL 등등)
+  - Amazon RDS, Redshift, DynamoDB, S3
+  - Elasticsearch Service
+  - Kinesis Data Streams
+  - Document DB
 
 
+
+ AWS Schema Conversion Tool (SCT)
+
+- Datacase schema를 다른 engine의 schema로 Convert 해주는 Tool
+  - ex) MySQL 에서 Elasticsearch service로 Migration한다 했을 때, MySQL Schema를 Elasticserach에 저장할 수 있는 Schema 형태로 바꿔준다.
+  - OLTP (SQL Server or Oracle to MySQL, PostgreSQL, Aurora)
+  - OLAP (Teradata or Oracle to Amazon Redshift)
+- **AWS SCT를 사용하기 위해 AWS DMS Endpoint와 Task를 반드시 생성해야 한다.**
 
 
 
