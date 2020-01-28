@@ -28,3 +28,30 @@ worker 3 --> HDFS 경로 (/user/fluentd/test.log.3)
 
 
 며칠 모니터링 해본 결과 이상 없이 동작하는 것을 확인했다.
+
+
+
+<hr>
+
+추가로 아래 이슈가 발생할 수 있다.
+
+>failed to communicate hdfs cluster, path: /logs/file.log.2020-01-28-01-03-35
+
+
+
+특정 경로에 파일을 write 할 때 위와 같은 이슈가 추가로 발생한다.
+
+hdfs 경로 `/logs/file.log.2020-01-28-01-03-35`에 file을 쓰지못하는 이슈이다.
+
+- hdfs namenode의 master-standby node가 전환되면서 발생한 이슈로 보인다.
+
+- 그렇기 때문에 fluentd는 이미 같은 경로에 파일이 있을 경우 file을 쓰지 못한다. (하나의 hdfs file엔 하나의 client만 접근할 수 있기 때문)
+
+
+
+**해결책**
+
+1. hdfs에 저장된 `/logs/file.log.2020-01-28-01-03-35` 파일의 이름을 바꾼다. (ex. `/logs/file.log.2020-01-28-01-03-35.tmp` )
+2. 파일 이름을 바꾸면 새로 `/logs/file.log.2020-01-28-01-03-35` file이 생성되면서 정상 동작하는 것을 확인할 수 있다.
+
+
