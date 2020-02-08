@@ -11,7 +11,7 @@ RUN tar vxfz openjdk-13.0.2_linux-x64_bin.tar.gz
 RUN rm openjdk-13.0.2_linux-x64_bin.tar.gz
 RUN mv jdk-13.0.2/ /usr/share
 
-# JAVA 환경 변수 설정
-RUN echo 'export JAVA_HOME=/usr/share/jdk-11' >> ~/.bashrc
+# 환경 변수 설정
+RUN echo 'export JAVA_HOME=/usr/share/jdk-13.0.2' >> ~/.bashrc
 RUN echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
 RUN /bin/bash -c "source ~/.bashrc"
