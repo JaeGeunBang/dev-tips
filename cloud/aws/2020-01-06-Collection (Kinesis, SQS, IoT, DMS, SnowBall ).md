@@ -610,7 +610,82 @@ Source, Target
 
 
 
+<HR>
 
+### Direct Connect
+
+- remote network가 나의 VPC로 직접 연결할 수 있도록 private connection을 제공한다.
+  - 1 Gbps or 10 Gbps로 셋팅할 수 있다.
+  - Direct Connect와 Direct Connect location과 Connection을 Setup 할 수 있다.
+- Direct Connect를 위해 Virtual Practive Gateway를 셋팅이 필요하다.
+- Public resource (S3), Private (EC2)에 연결할 수 있다.
+-   User Case
+  - bandwitdh throughput이 증가할 때, 대규모 데이터 집합 처리를 낮은 비용으로 하고싶을 때(?)
+  - Hybrid Environment를 구축하고 싶을때 (On pre + Cloud)
+  - Enhanced security (강화된 보안)
+- 높은 Availiability를 위해 사용한다.
+  - 두 개의 Direct Connect를 통해 failover를 위해 사용한다. 
+  - 즉, 하나가 다운이 되도 Connection은 지속된다.
+
+![1](https://user-images.githubusercontent.com/22383120/74153181-5dec8680-4c53-11ea-9ddb-92cd293a700a.PNG)
+
+Direct Connect Gateway
+
+- 다양한 Region에 Direct Connect를 하나 또는, 그 이상의 VPC 셋팅하고 싶을때 사용한다.
+
+
+
+<hr>
+
+### SnowBall
+
+ SnowBall은 물리적인 Data transport solution 이다.
+
+- AWS in, out으로 테라, 페타 이상의 데이터를 전송할 때 사용한다.
+- 비용은 network fee가 발생한다. 
+- Secure, tamper resistant한 특징을 가지며 KMS 256 bit encryption을 사용한다. 
+- User case
+  - 대규모 데이터 migration하기 위함
+  - DC decommission (Direct Connect 해체?)
+  - disaster recovery (재난 복구)  
+- 기본적으로 데이터 전송하는데 일주일이상 소요가 될것 같으면 Snowball을 사용하는 것이 좋다.
+
+
+
+처리 과정
+
+1. snowball device를 AWS console에서 요청한다.
+2. snowball client를 내 server에 설치한다.
+3. snaowball을 내 server (snowball client)와 연결 후 client를 통해 file을 복사한다.
+4. 복사 완료 후 정확하게 snowball로 전송된다. (mis-shipping 걱정은 안해도 된다.)
+5. data를 s3 bucket으로 load한다.
+6. snowball은 완전히 지워진다.
+7. SNS, text message를 통해 결과를 tracking할 수 있다.
+
+
+
+직접 S3 bucket에 upload하는 것과 Snowball의 차이
+
+![1](https://user-images.githubusercontent.com/22383120/74154146-6c3ba200-4c55-11ea-9b69-9349255d5326.PNG)
+
+ 
+
+Snowball edge
+
+- 추가적인 computational capability를 snowball device에 제공한다.
+  - 즉 단순히 데이터 moving이 아니라 전처리나 계산같은 작업을 하고 싶을때 사용한다.
+- 100 TB capacity와 더불어 Storage 최적화 (24 vCPU)와 Compute 최적화 (52 vCPU, GPU)를 제공한다.
+- Custom한 EC2 AMI를 지원하며, go language를 통해 processing을 수행할 수 있다.
+  - 추가로 Custom한 Lambda function도 제공할 수 있어 pre-processing으로도 유용하게 사용한다.
+- Use case
+  - 데이터 migration, image collaction, IoT Capture, ML 등
+
+
+
+Snowmobile
+
+- exabyte 이상의 데이터를 전송하고 싶을때 사용한다.
+  - snowmobile은 100 페타의 capacity를 가진다. 이를 parallel 하게 사용해 exabyte 이상의 데이터를 전송한다.
 
 
 
