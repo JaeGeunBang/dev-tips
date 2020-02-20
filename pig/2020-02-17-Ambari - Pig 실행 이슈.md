@@ -61,12 +61,3 @@ pig 실행 도중 실패했는데, Yarn에 찍힌 log는 아래와 같다.
 #### 참고
 
 https://stackoverflow.com/questions/32341709/bad-substitution-when-submitting-spark-job-to-yarn-cluster
-
-
-
-
-
-
-
-
-
