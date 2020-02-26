@@ -1,7 +1,11 @@
 ### Kinesis Firehose Execise
 
 <hr>
+
+
+
 필요한 서비스
+
 
 - Kinesis Firehose, S3, EC2(Kinesis Agent)
 
