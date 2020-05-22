@@ -1,7 +1,11 @@
 ### Nifi threads 조정
 
 <hr>
+
+
+
 각 Processor들은 동시에 수행하기 위해 Thread수를 조정할 수 있는데 이는 Concurrent Tasks에서 조정할 수 있다. 디폴트는 1이다.
+
 
 
 

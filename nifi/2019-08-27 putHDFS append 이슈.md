@@ -1,7 +1,11 @@
 ### putHDFS - append 이슈
 
 <hr>
+
+
+
 putHDFS processor를 append 방식으로 write할 때 아래와 같은 이슈가 생긴다.
+
 
 > Failed to APPEND_FILE ... because this file lease is currently owned by DFSClient_NONMAPREDUCE on ...
 
