@@ -1,8 +1,10 @@
 ### Nifi Error Handling
 
 <Hr>
-Nifi Processor 수행 중 에러 발생 시 Processor 오른쪽 상단에 빨간 문서가 뜨면서 에러 메시지를 보여준다.
 
+
+
+Nifi Processor 수행 중 에러 발생 시 Processor 오른쪽 상단에 빨간 문서가 뜨면서 에러 메시지를 보여준다.
 
 
 새로운 Attribute를 추가할 때 주로 UpdateAttribute를 사용하는데, 해당 Processor에서 에러가 발생할 수 있음.
