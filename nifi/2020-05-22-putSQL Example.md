@@ -32,8 +32,33 @@ DataFlow는 아래와 같다
       - Script Body
 
         ```Groovy
+        import org.apache.commons.io.IOUtils
+        import org.apache.nifi.flowfile.FlowFile
+        import org.apache.nifi.processor.io.InputStreamCallback
         
+        import java.nio.charset.*
+        
+        List<FlowFile> flowFileList = session.get(10000);
+        
+        def slurper = new groovy.json.JsonSlurper()
+        if (!flowFileList.isEmpty()) {
+            flowFileList.each {flowFile ->
+                def attrs = [:] as Map<String, String>
+                session.read(flowFile,
+                        { inputStream ->
+                            def text = IOUtils.toString(inputStream, StandardCharsets.UTF_8)
+                            def obj = slurper.parseText(text)
+                            obj.each { k, v ->
+                                attrs[k] = v.toString()
+                            }
+                        } as InputStreamCallback)
+                flowFile = session.putAllAttributes(flowFile, attrs)
+                session.transfer(flowFile, REL_SUCCESS)
+            }
+        }
         ```
+        
+      - JSON 형태의 Message를 Parsing 하여 Nifi Attribute로 만든다.
 
   - `ReplaceText`: Attributes를 통해 MySQL 문법을 만든다.
 
