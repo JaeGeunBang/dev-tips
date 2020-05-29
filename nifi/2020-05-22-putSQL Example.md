@@ -25,6 +25,9 @@ DataFlow는 아래와 같다
 
   - `ConsumerKafka`: Kafka로 부터 Message를 받는다.
 
+    - Property
+      - Message Demarcator는 설정하지 않는다. FlowFile당 1개의 Message가 있어야 한다.
+
   - `ExecuteScript`: Kafka Message (Nifi Contents)를 Nifi Attributes로 바꾸기 위함이다. 코드는 아래와 같다. (Contents를 Attribute로 바꾸는 방법은 다양하게 있다.)
 
     - Property
