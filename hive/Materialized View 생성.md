@@ -32,10 +32,6 @@ AS
 > ALTER MATERIALIZED VIEW mv_table REBUILD ;
 ```
 
-이를 주기적으로 수행하고 싶다면 아래 옵션을 넣어야 한다. (10분에 한번씩)
-
-`hive.materializedview.rewriting.time.window=10min`
-
 
 
 ### 이슈
