@@ -14,3 +14,5 @@ database를 지워봐도, 똑같은 에러가 발생한다. sys db에 table 정�
 
 
 Hive 4.0 에서 이슈가 처리될것으로 보이지만, 현재로써는 딱히 해결 방법은 없는것 같다.
+
+- Transactional Table을 지우기 전에 해당 테이블과 관련된 Materizlied view을 모두 지워야 정상적으로 삭제할 수 있다.
