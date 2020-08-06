@@ -62,6 +62,33 @@ Check-sum mismatch between hdfs://... and hdfs://...
 
 
 
+<hr>
+
+distcp 수행 중 memory 이슈가 발생했다.
+
+```
+15/01/31 16:03:58 INFO mapreduce.Job: Task Id : attempt_1422733582475_0003_m_000008_0, Status : FAILED
+Container [pid=22881,containerID=container_1422733582475_0003_01_000011] is running beyond physical memory limits. Current usage: 1.0 GB of 1 GB physical memory used; 3.6 GB of 2.1 GB virtual memory used. Killing container.
+...
+
+Container killed on request. Exit code is 143
+Container exited with a non-zero exit code 143
+```
+
+
+
+distcp 수행시 아래와 같이 추가 parameter를 수행한다.
+
+```
+hadoop distcp -Dmapreduce.map.memory.mb=3000 -Dmapreduce.reduce.memory.mb=6000 ...
+```
+
+
+
+
+
 ### 참고 
 
 https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html
+
+https://community.cloudera.com/t5/Support-Questions/Container-Memory-Error-Hadoop-CDH-5-2/td-p/24265
